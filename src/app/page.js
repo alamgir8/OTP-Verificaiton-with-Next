@@ -1,5 +1,5 @@
 "use client";
-import PhoneAuth from "./components/PhoneAuth";
+import PhoneAuth from "@components/PhoneAuth";
 
 export default function Home() {
   return (
