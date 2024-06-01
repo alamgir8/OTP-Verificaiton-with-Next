@@ -4,10 +4,10 @@ import { auth } from "@lib/firebase";
 import { countryList } from "@lib/countries";
 import { phoneSchema, phoneSignUpSchema } from "@lib/form-schema";
 import Error from "./Error";
-import { notifyError, notifySuccess } from "@lib/toast";
+import { notifySuccess } from "@lib/toast";
 
 const PhoneCustomAuth = () => {
-  const [selectedCountry, setSelectedCountry] = useState(countryList[12]);
+  const [selectedCountry, setSelectedCountry] = useState(countryList[0]);
   const [phoneNumber, setPhoneNumber] = useState("");
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [errors, setErrors] = useState({});
@@ -16,122 +16,76 @@ const PhoneCustomAuth = () => {
   const [name, setName] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
-  const [user, setUser] = useState(null);
-  const [loading, setLoading] = useState(false);
-  const [recaptchaLoaded, setRecaptcahLoaded] = useState(false);
-
-  const onCaptchVerify = async () => {
-    try {
-      if (!window.recaptchaVerifier) {
-        window.recaptchaVerifier = new RecaptchaVerifier(
-          auth,
-          "recaptcha-container",
-          {
-            size: "normal",
-            callback: (response) => {
-              console.log("response", response);
-              handleSentOtp();
-            },
-            "expired-callback": () => {},
-          }
-        );
-      }
-    } catch (error) {
-      setErrors({
-        global: error.message,
-      });
-    }
-  };
 
   const handleSentOtp = async () => {
     const validatedFields = phoneSchema.safeParse({
       phone: phoneNumber,
     });
-    // console.log("handleGetOTP", validatedFields);
+    console.log("handleGetOTP", validatedFields);
     // If any form fields are invalid, return early
     if (!validatedFields.success) {
       return setErrors(validatedFields.error.flatten().fieldErrors);
     }
-    setErrors({});
-
-    const fullPhoneNumber = `+${selectedCountry.code}${phoneNumber}`;
-
     try {
-      await onCaptchVerify();
-      setRecaptcahLoaded(true);
-      const appVerifier = window.recaptchaVerifier;
-      console.log(
-        "fullPhoneNumber",
-        fullPhoneNumber,
-        "appVerifier",
-        appVerifier
-      );
-
-      // return;
-      setLoading(true);
+      setErrors({});
+      const fullPhoneNumber = `+${selectedCountry.code}${phoneNumber}`;
+      const recaptcha = new RecaptchaVerifier(auth, "recaptcha-container", {
+        size: "normal",
+        callback: (response) => {
+          console.log("reCAPTCHA solved", response);
+        },
+        "expired-callback": () => {
+          console.log("reCAPTCHA expired");
+        },
+      });
       const confirmationResult = await signInWithPhoneNumber(
         auth,
         fullPhoneNumber,
-        appVerifier
+        recaptcha
       );
-      if (confirmationResult) {
-        window.confirmationResult = confirmationResult;
-        setLoading(false);
-        setOtpSent(true);
-        notifySuccess("Otp sent successfully, please check your number");
-      }
+
+      console.log("SMS sent", confirmationResult);
+      notifySuccess("Otp sent successfully, please check your number");
+
+      setOtpSent(true);
     } catch (error) {
       console.log("error", error);
       setErrors({
-        global: error.message,
+        global: error.message || "Failed to send OTP. Please try again.",
       });
-
-      setLoading(false);
     }
-
-    // return;
   };
 
   const closeModal = () => {
     setIsModalOpen(false);
   };
 
-  const handleSubmit = async () => {
+  const handleSubmit = () => {
     const validatedFields = phoneSignUpSchema.safeParse({
       name: name,
       password: password,
     });
-
+    console.log("handleGetOTP", validatedFields);
     // If any form fields are invalid, return early
     if (!validatedFields.success) {
       return setErrors(validatedFields.error.flatten().fieldErrors);
     }
-    setErrors({});
-
-    if (password !== confirmPassword) {
-      return setErrors({
-        confirmPassword: "Password not matched!",
-      });
-    }
 
     try {
-      const res = await window.confirmationResult.confirm(otp);
-      console.log("res", res);
-      notifySuccess("Sign up successfully.");
-      setUser(res.user);
-      setLoading(false);
-    } catch (err) {
-      console.log("err", err);
-      setErrors({
-        otp: err.message,
-      });
-      setLoading(false);
+      if (password !== confirmPassword) {
+        return setErrors({
+          confirmPassword: "Password not matched!",
+        });
+      }
+
+      console.log("All fields valid. Submit form.");
+      // Add form submission logic here.
+    } catch (error) {
+      setErrors({ global: error.message });
     }
   };
 
-  // console.log("errors", errors);
-
-  console.log("isRecaptcha", recaptchaLoaded);
+  console.log("errors", errors);
 
   return (
     <div className="mx-auto max-w-screen-2xl px-3 sm:px-10">
@@ -147,81 +101,77 @@ const PhoneCustomAuth = () => {
                   Get started - it's free.
                 </p>
               </div>
-
-              {!otpSent ? (
-                <>
-                  <div className="max-w-md mx-auto mt-10 p-4 bg-white rounded-lg">
-                    <label
-                      htmlFor="phone"
-                      className="block text-sm font-medium text-gray-700 mb-1"
-                    >
-                      Phone Number
-                    </label>
-                    <div className="flex items-center">
-                      <button
-                        type="button"
-                        className="flex items-center justify-center w-1/3 rounded-l-md border border-gray-300 bg-gray-100 py-2 px-3 focus:outline-none"
-                        onClick={() => setIsModalOpen(true)}
-                      >
-                        {selectedCountry.flag} +{selectedCountry.code}
-                      </button>
-                      <input
-                        type="tel"
-                        id="phone"
-                        name="phone"
-                        className="block w-2/3 rounded-r-md border border-gray-300 pl-3 py-2 focus:border-indigo-500 focus:outline-none focus:ring-indigo-500 sm:text-sm"
-                        placeholder="Phone number"
-                        value={phoneNumber}
-                        onChange={(e) => setPhoneNumber(e.target.value)}
-                      />
-                    </div>
-                    {errors.phone && <Error errors={errors?.phone} />}
-                    {errors.global && (
-                      <p className="text-red-500 mt-2">{errors.global}</p>
-                    )}
-                    {isModalOpen && (
-                      <div className="fixed inset-0 z-50 flex items-center justify-center bg-opacity-50 bg-gray-800">
-                        <div className="bg-white p-4 rounded-md shadow-lg max-w-lg w-full">
-                          <h2 className="text-xl font-semibold mb-4">
-                            Select Your Country
-                          </h2>
-                          <ul className="max-h-60 overflow-y-auto">
-                            {countryList.map((country) => (
-                              <li
-                                key={country.name}
-                                className="p-2 hover:bg-gray-100 cursor-pointer"
-                                onClick={() => {
-                                  setSelectedCountry(country);
-                                  closeModal();
-                                }}
-                              >
-                                {country.flag} {country.name} (+{country.code})
-                              </li>
-                            ))}
-                          </ul>
-                          <button
-                            className="mt-4 w-full bg-indigo-600 text-white py-2 rounded-md"
-                            onClick={closeModal}
+              <div className="max-w-md mx-auto mt-10 p-4 bg-white rounded-lg">
+                <label
+                  htmlFor="phone"
+                  className="block text-sm font-medium text-gray-700 mb-1"
+                >
+                  Phone Number
+                </label>
+                <div className="flex items-center">
+                  <button
+                    type="button"
+                    className="flex items-center justify-center w-1/3 rounded-l-md border border-gray-300 bg-gray-100 py-2 px-3 focus:outline-none"
+                    onClick={() => setIsModalOpen(true)}
+                  >
+                    {selectedCountry.flag} +{selectedCountry.code}
+                  </button>
+                  <input
+                    type="tel"
+                    id="phone"
+                    name="phone"
+                    className="block w-2/3 rounded-r-md border border-gray-300 pl-3 py-2 focus:border-indigo-500 focus:outline-none focus:ring-indigo-500 sm:text-sm"
+                    placeholder="Phone number"
+                    value={phoneNumber}
+                    onChange={(e) => setPhoneNumber(e.target.value)}
+                  />
+                </div>
+                {errors.phone && <Error errors={errors?.phone} />}
+                {errors.global && (
+                  <p className="text-red-500 mt-2">{errors.global}</p>
+                )}
+                {isModalOpen && (
+                  <div className="fixed inset-0 z-50 flex items-center justify-center bg-opacity-50 bg-gray-800">
+                    <div className="bg-white p-4 rounded-md shadow-lg max-w-lg w-full">
+                      <h2 className="text-xl font-semibold mb-4">
+                        Select Your Country
+                      </h2>
+                      <ul className="max-h-60 overflow-y-auto">
+                        {countryList.map((country) => (
+                          <li
+                            key={country.name}
+                            className="p-2 hover:bg-gray-100 cursor-pointer"
+                            onClick={() => {
+                              setSelectedCountry(country);
+                              closeModal();
+                            }}
                           >
-                            Close
-                          </button>
-                        </div>
-                      </div>
-                    )}
+                            {country.flag} {country.name} (+{country.code})
+                          </li>
+                        ))}
+                      </ul>
+                      <button
+                        className="mt-4 w-full bg-indigo-600 text-white py-2 rounded-md"
+                        onClick={closeModal}
+                      >
+                        Close
+                      </button>
+                    </div>
                   </div>
-                  <div id="recaptcha-container" className="p-4"></div>
-                  <div className="my-6">
-                    <button
-                      type="button"
-                      // disabled={loading}
-                      onClick={handleSentOtp}
-                      className="w-full text-center py-3 rounded bg-emerald-500 text-white hover:bg-emerald-600 transition-all focus:outline-none my-1"
-                    >
-                      {recaptchaLoaded ? "Resend" : "Sent OTP"}
-                    </button>
-                  </div>
-                </>
-              ) : (
+                )}
+              </div>
+
+              <div className="my-6">
+                <button
+                  type="button"
+                  onClick={handleSentOtp}
+                  className="w-full text-center py-3 rounded bg-emerald-500 text-white hover:bg-emerald-600 transition-all focus:outline-none my-1"
+                >
+                  Sent OTP
+                </button>
+              </div>
+              <div id="recaptcha-container" className="p-4"></div>
+              {otpSent && (
                 <div className="max-w-md mx-auto mt-6 p-4 bg-white rounded-lg">
                   <label
                     htmlFor="otp"

@@ -2,40 +2,6 @@
 @tailwind components;
 @tailwind utilities;
 
-:root {
-  --foreground-rgb: 0, 0, 0;
-  --background-start-rgb: 214, 219, 220;
-  --background-end-rgb: 255, 255, 255;
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --foreground-rgb: 255, 255, 255;
-    --background-start-rgb: 0, 0, 0;
-    --background-end-rgb: 0, 0, 0;
-  }
-}
-
-body {
-  color: rgb(var(--foreground-rgb));
-  background: linear-gradient(
-      to bottom,
-      transparent,
-      rgb(var(--background-end-rgb))
-    )
-    rgb(var(--background-start-rgb));
-}
-
-@layer utilities {
-  .text-balance {
-    text-wrap: balance;
-  }
-}
-
-.react-tel-input .form-control {
-  padding: 20px 0;
-}
-
 .flag {
   width: 20px;
   height: 18px;
@@ -763,12 +729,13 @@ body {
   background-position: -144px -360px;
 }
 
-.nsm7Bb-HzV7m-LgbsSe {
-  background: #e4e9e7 !important;
-  height: 48px !important;
+.react-tel-input .form-control {
+  @apply !w-full py-6 !text-base;
 }
 
-.nsm7Bb-HzV7m-LgbsSe:hover {
-  background: #10b981 !important;
-  color: #e2e8f0;
+.opt-container {
+  @apply flex justify-between gap-2;
+}
+.opt-container input {
+  @apply !mr-0 flex-1 py-5 outline-none;
 }

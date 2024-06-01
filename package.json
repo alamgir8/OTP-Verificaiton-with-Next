@@ -16,6 +16,7 @@
     "react-dom": "^18",
     "react-phone-input-2": "^2.15.1",
     "react-phone-number-input": "^3.4.3",
+    "react-toastify": "^10.0.5",
     "zod": "^3.23.8"
   },
   "devDependencies": {
