@@ -3,7 +3,8 @@ import { RecaptchaVerifier, signInWithPhoneNumber } from "firebase/auth";
 import { auth } from "@lib/firebase";
 import { number, z } from "zod";
 import { countryList } from "@lib/countries";
-import { phoneSchema } from "@lib/form-schema";
+import { phoneSchema, phoneSignUpSchema } from "@lib/form-schema";
+import Error from "./Error";
 
 const PhoneAuth = () => {
   const [selectedCountry, setSelectedCountry] = useState(countryList[0]);
@@ -16,40 +17,14 @@ const PhoneAuth = () => {
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
 
-  const recaptchaRef = useRef(null);
-
-  // useEffect(() => {
-  //   loadRecaptcha();
-  // }, []);
-
-  const loadRecaptcha = async () => {
-    try {
-      const recaptcha = new RecaptchaVerifier(auth, "recaptcha-container", {
-        size: "normal",
-        callback: (response) => {
-          console.log("reCAPTCHA solved", response);
-        },
-        "expired-callback": () => {
-          console.log("reCAPTCHA expired");
-        },
-      });
-      const confirmation = signInWithPhoneNumber(auth, phoneNumber, recaptcha);
-      console.log("recaptcha", recaptcha, "confirmation", confirmation);
-    } catch (error) {
-      console.log("Error loading reCAPTCHA", error);
-    }
-  };
-
-  const handleRecaptcha = async () => {
+  const handleSentOtp = async () => {
     const validatedFields = phoneSchema.safeParse({
       phone: phoneNumber,
     });
     console.log("handleGetOTP", validatedFields);
     // If any form fields are invalid, return early
     if (!validatedFields.success) {
-      return {
-        errors: validatedFields.error.flatten().fieldErrors,
-      };
+      return setErrors(validatedFields.error.flatten().fieldErrors);
     }
     try {
       setErrors({});
@@ -91,14 +66,21 @@ const PhoneAuth = () => {
   };
 
   const handleSubmit = () => {
-    const nameSchema = z.string().min(1, { message: "Name is required" });
-    const passwordSchema = z.string().min(6, { message: "Password too short" });
+    const validatedFields = phoneSignUpSchema.safeParse({
+      name: name,
+      password: password,
+    });
+    console.log("handleGetOTP", validatedFields);
+    // If any form fields are invalid, return early
+    if (!validatedFields.success) {
+      return setErrors(validatedFields.error.flatten().fieldErrors);
+    }
 
     try {
-      nameSchema.parse(name);
-      passwordSchema.parse(password);
       if (password !== confirmPassword) {
-        throw new Error("Passwords do not match");
+        return setErrors({
+          confirmPassword: "Password not matched!",
+        });
       }
 
       console.log("All fields valid. Submit form.");
@@ -115,6 +97,8 @@ const PhoneAuth = () => {
       }
     }
   };
+
+  console.log("errors", errors);
 
   return (
     <div className="mx-auto max-w-screen-2xl px-3 sm:px-10">
@@ -155,9 +139,7 @@ const PhoneAuth = () => {
                     onChange={(e) => setPhoneNumber(e.target.value)}
                   />
                 </div>
-                {errors.phoneNumber && (
-                  <p className="text-red-500 mt-2">{errors.phoneNumber}</p>
-                )}
+                {errors.phone && <Error errors={errors?.phone} />}
                 {errors.global && (
                   <p className="text-red-500 mt-2">{errors.global}</p>
                 )}
@@ -191,18 +173,15 @@ const PhoneAuth = () => {
                   </div>
                 )}
               </div>
-              <div
-                id="recaptcha-container"
-                ref={recaptchaRef}
-                className="p-4"
-              ></div>
+              <div id="recaptcha-container" className="p-4"></div>
+
               <div className="my-6">
                 <button
                   type="button"
-                  onClick={handleRecaptcha}
+                  onClick={handleSentOtp}
                   className="w-full text-center py-3 rounded bg-emerald-500 text-white hover:bg-emerald-600 transition-all focus:outline-none my-1"
                 >
-                  Login
+                  Sent OTP
                 </button>
               </div>
               {otpSent && (
@@ -258,9 +237,7 @@ const PhoneAuth = () => {
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                   />
-                  {errors.password && (
-                    <p className="text-red-500 mt-2">{errors.password}</p>
-                  )}
+                  {errors?.password && <Error errors={errors?.password} />}
                   <label
                     htmlFor="confirmPassword"
                     className="block text-sm font-medium text-gray-700 mt-4 mb-1"
@@ -281,6 +258,8 @@ const PhoneAuth = () => {
                       {errors.confirmPassword}
                     </p>
                   )}
+
+                  <div id="recaptcha-container" className="p-4"></div>
                   <div className="my-6">
                     <button
                       type="button"
