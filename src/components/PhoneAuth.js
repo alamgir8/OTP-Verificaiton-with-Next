@@ -5,6 +5,7 @@ import { countryList } from "@lib/countries";
 import { phoneSchema, phoneSignUpSchema } from "@lib/form-schema";
 import Error from "./Error";
 import { notifyError, notifySuccess } from "@lib/toast";
+import { AiFillEye, AiFillEyeInvisible } from "react-icons/ai";
 
 const PhoneCustomAuth = () => {
   const [selectedCountry, setSelectedCountry] = useState(countryList[12]);
@@ -19,6 +20,8 @@ const PhoneCustomAuth = () => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(false);
   const [recaptchaLoaded, setRecaptcahLoaded] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   const onCaptchVerify = async () => {
     try {
@@ -148,7 +151,7 @@ const PhoneCustomAuth = () => {
                 </p>
               </div>
 
-              {!otpSent ? (
+              {otpSent ? (
                 <>
                   <div className="max-w-md mx-auto mt-10 p-4 bg-white rounded-lg">
                     <label
@@ -265,15 +268,27 @@ const PhoneCustomAuth = () => {
                   >
                     Password
                   </label>
-                  <input
-                    type="password"
-                    id="password"
-                    name="password"
-                    className="block w-full rounded-md border border-gray-300 pl-3 py-2 focus:border-indigo-500 focus:outline-none focus:ring-indigo-500 sm:text-sm"
-                    placeholder="Password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                  />
+                  <div className="relative">
+                    <input
+                      type={showPassword ? "text" : "password"}
+                      id="password"
+                      name="password"
+                      className="block w-full rounded-md border border-gray-300 pl-3 py-2 focus:border-indigo-500 focus:outline-none focus:ring-indigo-500 sm:text-sm"
+                      placeholder="Password"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                    />
+                    <div
+                      className="absolute inset-y-0 right-0 pr-3 flex items-center text-sm leading-5"
+                      onClick={() => setShowPassword(!showPassword)}
+                    >
+                      {showPassword ? (
+                        <AiFillEyeInvisible className="h-5 w-5 text-gray-500 cursor-pointer" />
+                      ) : (
+                        <AiFillEye className="h-5 w-5 text-gray-500 cursor-pointer" />
+                      )}
+                    </div>
+                  </div>
                   {errors?.password && <Error errors={errors?.password} />}
                   <label
                     htmlFor="confirmPassword"
@@ -281,15 +296,29 @@ const PhoneCustomAuth = () => {
                   >
                     Confirm Password
                   </label>
-                  <input
-                    type="password"
-                    id="confirmPassword"
-                    name="confirmPassword"
-                    className="block w-full rounded-md border border-gray-300 pl-3 py-2 focus:border-indigo-500 focus:outline-none focus:ring-indigo-500 sm:text-sm"
-                    placeholder="Confirm Password"
-                    value={confirmPassword}
-                    onChange={(e) => setConfirmPassword(e.target.value)}
-                  />
+                  <div className="relative">
+                    <input
+                      type={showConfirmPassword ? "text" : "password"}
+                      id="confirmPassword"
+                      name="confirmPassword"
+                      className="block w-full rounded-md border border-gray-300 pl-3 py-2 focus:border-indigo-500 focus:outline-none focus:ring-indigo-500 sm:text-sm"
+                      placeholder="Confirm Password"
+                      value={confirmPassword}
+                      onChange={(e) => setConfirmPassword(e.target.value)}
+                    />
+                    <div
+                      className="absolute inset-y-0 right-0 pr-3 flex items-center text-sm leading-5"
+                      onClick={() =>
+                        setShowConfirmPassword(!showConfirmPassword)
+                      }
+                    >
+                      {showConfirmPassword ? (
+                        <AiFillEyeInvisible className="h-5 w-5 text-gray-500 cursor-pointer" />
+                      ) : (
+                        <AiFillEye className="h-5 w-5 text-gray-500 cursor-pointer" />
+                      )}
+                    </div>
+                  </div>
                   {errors.confirmPassword && (
                     <p className="text-red-500 mt-2">
                       {errors.confirmPassword}
